@@ -1,6 +1,11 @@
 // Require the necessary discord.js classes
-const { Client, Intents } = require('discord.js');
-const { prefix } = require('./config.json');
+const { Client, GatewayIntentBits } = require('discord.js');
+const dotenv = require('dotenv');
+
+dotenv.config();
+
+const discordToken = process.env.DISCORD_TOKEN;
+
 const {
   joinVoiceChannel,
   createAudioPlayer,
@@ -10,7 +15,7 @@ const {
 } = require('@discordjs/voice');
 
 // Create a new client instance
-const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_VOICE_STATES] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildVoiceStates] });
 
 const player = createAudioPlayer();
 
@@ -27,13 +32,13 @@ client.once('disconnect', () => {
   console.log('Disconnect!');
 });
 
-client.on('messageCreate', message => {
-  if (message.author.bot) return;
-  if (!message.content.startsWith(prefix)) return;
-  if (message.content.startsWith(`${prefix}stelio`)) {
-    const voiceChannel = message.member.voice.channel;
+client.on('interactionCreate', async interaction => {
+  if (!interaction.isChatInputCommand()) return;
+  const { commandName, member } = interaction;
+  if (commandName === 'stelio') {
+    const voiceChannel = member.voice.channel;
     if (!voiceChannel) {
-      return message.channel.send('You need to be in a voice channel to play music!');
+      await interaction.reply('You need to be in a voice channel for Stelio to aid you!');
     } else {
       const connection = joinVoiceChannel({
         channelId: voiceChannel.id,
@@ -53,10 +58,12 @@ client.on('messageCreate', message => {
           }
         });
       });
+
+      await interaction.reply('He is here!');
     }
     return;
   }
 });
 
 // Login to Discord with your client's token
-client.login(process.env.DISCORD_TOKEN);
+client.login(discordToken);
